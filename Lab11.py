@@ -14,14 +14,15 @@ def parse_assignments(file_content):
 def parse_students(file_content):
     students = {}
     for line in file_content:
-        student_id = line[3:].strip()
+        student_id = line[:3].strip()
+        name = line[3:].strip()
         students[student_id] = name
     return students
 
 def parse_submission(file_content):
     submissions = []
     for line in file_content:
-        student_id, assignment_id, score = line.split().split('|')
+        student_id, assignment_id, score = line.strip().split('|')
         submissions.append({
             "student_id": student_id,
             "assignment_id": assignment_id,
@@ -55,7 +56,7 @@ def student_grade(students, submissions, assignments):
     print(f"{grade_percentage}%")
 
 def assignment_statistics(assignments, submissions):
-    assignment_name = input("What is the student's name: ").strip()
+    assignment_name = input("What is the assignment name: ").strip()
     assignment_id = next((aid for aid, details in assignments.items() if details["name"] == assignment_name), None)
     if not assignment_id:
         print("Assignment not found")
@@ -69,5 +70,44 @@ def assignment_statistics(assignments, submissions):
     print(f"Max: {max(scores)}%")
 
 def assignment_graph(assignments, submissions):
-    assignment_name = input("What is the student's name: ").strip()
+    assignment_name = input("What is the student name: ").strip()
+    assignment_id =  next((aid for aid, details in assignments.items() if details['name'] == assignment_name), None)
+    if not assignment_id:
+        print("Assignment not found")
+        return
+    scores = [submission['score'] for submission in submissions if submission['assignment_id'] == assignment_id]
+    if not scores:
+        print("Assignment not found")
+        return
+    plt.hist(scores, bins=[0, 25, 50, 75, 100], edgecolor='black')
+    plt.title(f"Histogram of Scores for {assignment_name}")
+    plt.xlabel("Score Ranges")
+    plt.ylabel("Number of Students")
+    plt.show()
 
+def main():
+    assignments_file = 'data/assignments.txt'
+    students_file = 'data/students.txt'
+    submissions_folder = 'data/submissions'
+
+    with open(assignments_file, 'r') as f:
+        assignments_data = parse_assignments(f.readlines())
+    with open(students_file, 'r') as f:
+        students_data = parse_students(f.readlines())
+    submissions_data = aggregate_submissions(submissions_folder)
+
+    print("1. Student grade")
+    print("2. Assignment statistics")
+    print("3. Assignment graph")
+    choice = input("Enter your selection: ").strip()
+    if choice == '1':
+        student_grade(students_data, submissions_data, assignments_data)
+    elif choice == '2':
+        assignment_statistics(assignments_data, submissions_data)
+    elif choice == '3':
+        assignment_graph(assignments_data, submissions_data)
+    else:
+        print("Invalid choice")
+
+if __name__ == '__main__':
+    main()
